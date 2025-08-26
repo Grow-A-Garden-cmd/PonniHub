@@ -1,0 +1,320 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PonniHub"
+screenGui.Parent = playerGui
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Parent = screenGui
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+-- Corner rounding
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Parent = mainFrame
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+titleBar.BorderSizePixel = 0
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Parent = titleBar
+titleLabel.BackgroundTransparency = 1
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "PonniHub - Grow A Garden"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextScaled = true
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Parent = titleBar
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeButton.BorderSizePixel = 0
+closeButton.Position = UDim2.new(1, -35, 0, 5)
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextScaled = true
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 5)
+closeCorner.Parent = closeButton
+
+-- Content Frame
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Parent = mainFrame
+contentFrame.BackgroundTransparency = 1
+contentFrame.Position = UDim2.new(0, 0, 0, 50)
+contentFrame.Size = UDim2.new(1, 0, 1, -50)
+contentFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
+contentFrame.ScrollBarThickness = 5
+
+-- Variables for farming
+local autoFarmEnabled = false
+local autoWaterEnabled = false
+local autoHarvestEnabled = false
+local autoSellEnabled = false
+local speedMultiplier = 1
+
+-- Create buttons function
+local function createButton(name, text, position, callback)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Parent = contentFrame
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.BorderSizePixel = 0
+    button.Position = position
+    button.Size = UDim2.new(0, 180, 0, 40)
+    button.Font = Enum.Font.Gotham
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextScaled = true
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 5)
+    buttonCorner.Parent = button
+    
+    button.MouseButton1Click:Connect(callback)
+    
+    return button
+end
+
+-- Create toggle function
+local function createToggle(name, text, position, callback)
+    local toggle = createButton(name, text .. ": OFF", position, function()
+        local isEnabled = not toggle:GetAttribute("Enabled")
+        toggle:SetAttribute("Enabled", isEnabled)
+        toggle.Text = text .. ": " .. (isEnabled and "ON" or "OFF")
+        toggle.BackgroundColor3 = isEnabled and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(50, 50, 50)
+        callback(isEnabled)
+    end)
+    toggle:SetAttribute("Enabled", false)
+    return toggle
+end
+
+-- Auto Farm Functions
+local function autoFarm()
+    spawn(function()
+        while autoFarmEnabled do
+            wait(0.1)
+            -- Auto farming logic for Grow A Garden
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                -- Find seeds and plant them
+                local backpack = player:FindFirstChild("Backpack")
+                if backpack then
+                    for _, item in pairs(backpack:GetChildren()) do
+                        if item.Name:find("Seed") then
+                            character.Humanoid:EquipTool(item)
+                            wait(0.5)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function autoWater()
+    spawn(function()
+        while autoWaterEnabled do
+            wait(0.5)
+            -- Auto watering logic
+            local character = player.Character
+            if character and character:FindFirstChild("Tool") then
+                local tool = character:FindFirstChild("Tool")
+                if tool and tool.Name:find("Water") then
+                    -- Use watering can
+                    tool:Activate()
+                end
+            end
+        end
+    end)
+end
+
+local function autoHarvest()
+    spawn(function()
+        while autoHarvestEnabled do
+            wait(0.3)
+            -- Auto harvest logic
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj.Name == "Crop" and obj:FindFirstChild("Harvest") then
+                    local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                    if humanoidRootPart then
+                        local distance = (humanoidRootPart.Position - obj.Position).Magnitude
+                        if distance < 50 then
+                            obj.Harvest:FireServer()
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function autoSell()
+    spawn(function()
+        while autoSellEnabled do
+            wait(2)
+            -- Auto sell logic
+            local sellPart = workspace:FindFirstChild("SellPart") or workspace:FindFirstChild("Sell")
+            if sellPart and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = sellPart.CFrame
+                wait(1)
+                if sellPart:FindFirstChild("ClickDetector") then
+                    fireclickdetector(sellPart.ClickDetector)
+                end
+            end
+        end
+    end)
+end
+
+-- Speed modification
+local function setSpeed(speed)
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 16 * speed
+    end
+end
+
+-- Create GUI buttons
+createToggle("AutoFarmToggle", "Auto Farm", UDim2.new(0, 20, 0, 20), function(enabled)
+    autoFarmEnabled = enabled
+    if enabled then
+        autoFarm()
+    end
+end)
+
+createToggle("AutoWaterToggle", "Auto Water", UDim2.new(0, 220, 0, 20), function(enabled)
+    autoWaterEnabled = enabled
+    if enabled then
+        autoWater()
+    end
+end)
+
+createToggle("AutoHarvestToggle", "Auto Harvest", UDim2.new(0, 20, 0, 80), function(enabled)
+    autoHarvestEnabled = enabled
+    if enabled then
+        autoHarvest()
+    end
+end)
+
+createToggle("AutoSellToggle", "Auto Sell", UDim2.new(0, 220, 0, 80), function(enabled)
+    autoSellEnabled = enabled
+    if enabled then
+        autoSell()
+    end
+end)
+
+-- Speed buttons
+createButton("Speed1", "Speed x1", UDim2.new(0, 20, 0, 140), function()
+    speedMultiplier = 1
+    setSpeed(speedMultiplier)
+end)
+
+createButton("Speed2", "Speed x2", UDim2.new(0, 220, 0, 140), function()
+    speedMultiplier = 2
+    setSpeed(speedMultiplier)
+end)
+
+createButton("Speed5", "Speed x5", UDim2.new(0, 20, 0, 200), function()
+    speedMultiplier = 5
+    setSpeed(speedMultiplier)
+end)
+
+createButton("Speed10", "Speed x10", UDim2.new(0, 220, 0, 200), function()
+    speedMultiplier = 10
+    setSpeed(speedMultiplier)
+end)
+
+-- Teleport buttons
+createButton("TeleportShop", "Teleport to Shop", UDim2.new(0, 20, 0, 260), function()
+    local shop = workspace:FindFirstChild("Shop") or workspace:FindFirstChild("Store")
+    if shop and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = shop.CFrame
+    end
+end)
+
+createButton("TeleportSell", "Teleport to Sell", UDim2.new(0, 220, 0, 260), function()
+    local sellArea = workspace:FindFirstChild("SellPart") or workspace:FindFirstChild("Sell")
+    if sellArea and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = sellArea.CFrame
+    end
+end)
+
+-- Utility functions
+createButton("InfiniteJump", "Infinite Jump", UDim2.new(0, 20, 0, 320), function()
+    local infjump = false
+    UserInputService.JumpRequest:Connect(function()
+        if infjump and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid:ChangeState("Jumping")
+        end
+    end)
+    infjump = not infjump
+end)
+
+createButton("NoClip", "NoClip", UDim2.new(0, 220, 0, 320), function()
+    local noclip = false
+    local function toggleNoclip()
+        noclip = not noclip
+        if player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = not noclip
+                end
+            end
+        end
+    end
+    toggleNoclip()
+end)
+
+-- Close button functionality
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Auto-update speed when character spawns
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    wait(1)
+    setSpeed(speedMultiplier)
+end)
+
+-- Initial setup
+if player.Character then
+    setSpeed(speedMultiplier)
+end
+
+print("PonniHub loaded successfully!")
+print("Created by Ponni - Grow A Garden Script")
